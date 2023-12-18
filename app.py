@@ -1,7 +1,7 @@
 import os
 import tensorflow as tf
 
-from flask import Flask, request, jsonify, Response
+from flask import Flask, request, jsonify
 
 
 app = Flask(__name__)
@@ -27,7 +27,7 @@ def recommend_by_bodypart():
             exercise_recommendations = exercise_recommendations.numpy()
             exercise_recommendations = [item.decode('utf-8') for item in exercise_recommendations[0]]
 
-            return jsonify({"error": False, "message": "SUCCESS", "data": exercise_recommendations}), 201
+            return jsonify({"error": False, "message": "SUCCESS", "data": exercise_recommendations}), 200
 
         except Exception as e:
             print(e)
