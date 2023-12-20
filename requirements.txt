@@ -2,3 +2,4 @@ flask
 tensorflow
 PyJWT
 python-dotenv
+psycopg2

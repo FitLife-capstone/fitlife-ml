@@ -3,7 +3,9 @@ import tensorflow as tf
 
 from flask import Flask, request, jsonify
 from middleware import auth_middleware
+from db import get_connection
 from dotenv import load_dotenv
+import psycopg2 as pg
 
 
 app = Flask(__name__)
@@ -24,19 +26,40 @@ def recommend_by_bodypart():
     if role == 'admin':
         return jsonify({"error": True, "message": "INVALID_REQUEST_BODY", "data": []}), 500
     
-    #TODO: get user data from database using user_id
+    conn = get_connection()
+    cur = conn.cursor()
+    query = f"SELECT * FROM users WHERE user_id = {user_id}"
+    cur.execute(query)
+    result = cur.fetchall()
+    if len(result) == 0:
+        return jsonify({"error": True, "message": "INVALID_REQUEST_BODY", "data": []}), 500
+    column_names = [col[0].lower() for col in cur.description]
+    user_data = dict(zip(column_names, result[0]))
 
     if body_part:
         try:
             model = tf.saved_model.load('./model')
-            _, titles = model([body_part])
+            _, name = model([body_part])
 
-            #TODO: filter by user equipment
-            exercise_recommendations = titles[:10]
-            exercise_recommendations = exercise_recommendations.numpy()
-            exercise_recommendations = [item.decode('utf-8') for item in exercise_recommendations[0]]
-
-            #TODO: get exercise details from database, then add to response object
+            name = name.numpy()
+            name = [item.decode('utf-8') for item in name[0]]
+            exercise_recommendations = []
+            while len(exercise_recommendations) < 10:
+                for i in range(len(name)):
+                    query = f"SELECT * FROM exercise WHERE exercise_name = '{name[i]}'"
+                    cur.execute(query)
+                    result = cur.fetchall()
+                    if len(result) == 0:
+                        continue
+                    column_names = [col[0].lower() for col in cur.description]
+                    exercise_data = dict(zip(column_names, result[0]))
+                    have_equipment = True
+                    for equipment in exercise_data['equipments']:
+                        if equipment not in user_data['equipments']:
+                            have_equipment = False
+                            break
+                    if have_equipment:
+                        exercise_recommendations.append(exercise_data)
 
             return jsonify({"error": False, "message": "SUCCESS", "data": exercise_recommendations}), 200
 
