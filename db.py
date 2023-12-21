@@ -8,11 +8,11 @@ def get_connection():
             dbname=os.environ.get('POSTGRES_DB'),
             user=os.environ.get('POSTGRES_USER'),
             password=os.environ.get('POSTGRES_PASSWORD'),
-            sslmode='require'
+            sslmode='disable'
         )
         print(f"Connected to {os.environ.get('POSTGRES_DB')} database")
         return conn
-    except psycopg2.Error as e:
+    except Exception as e:
         print(f"Error: Could not make connection to the PostgreSQL database")
         print(e)
         return None
